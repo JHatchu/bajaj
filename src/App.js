@@ -1,113 +1,120 @@
+// src/App.js
 import React, { useState } from 'react';
-import axios from 'axios';
+import './App.css';
 
-function App() {
-  const [input, setInput] = useState('');
+const App = () => {
+  const [jsonInput, setJsonInput] = useState('');
   const [response, setResponse] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const [visibleSections, setVisibleSections] = useState({
     characters: true,
     numbers: true,
     highestAlphabet: true
   });
-  const [isValidJson, setIsValidJson] = useState(true);
 
-  const handleInputChange = (e) => setInput(e.target.value);
+  const handleChange = (e) => {
+    setJsonInput(e.target.value);
+  };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      // Validate JSON
-      const json = JSON.parse(input);
-      setIsValidJson(true);
-
-      // Make API request
-      const result = await axios.post('https://your-render-app-url.onrender.com/bfhl', json);
-      setResponse(result.data);
-      setError(null);
-    } catch (err) {
-      setIsValidJson(false);
-      setError('Invalid JSON format.');
-      setResponse(null);
+      const data = JSON.parse(jsonInput);
+      setError('');
+      const res = await fetch('https://your-backend-url.com/bfhl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      setResponse(result);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        setError('Invalid JSON format');
+      } else {
+        console.error('Error:', e);
+      }
     }
   };
 
   const handleSectionChange = (e) => {
     const { name, checked } = e.target;
-    setVisibleSections((prev) => ({ ...prev, [name]: checked }));
+    setVisibleSections(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  };
+
+  const renderResults = () => {
+    if (!response) return null;
+
+    const { status, user_id, email, roll_number, numbers, alphabets, highest_alphabet } = response;
+
+    return (
+      <div className="results-display">
+        <h2>Results</h2>
+        <p><strong>Status:</strong> {status}</p>
+        <p><strong>User ID:</strong> {user_id}</p>
+        <p><strong>College Email ID:</strong> {email}</p>
+        <p><strong>College Roll Number:</strong> {roll_number}</p>
+        {visibleSections.numbers && <p><strong>Numbers:</strong> {numbers.join(', ')}</p>}
+        {visibleSections.characters && <p><strong>Alphabets:</strong> {alphabets.join(', ')}</p>}
+        {visibleSections.highestAlphabet && <p><strong>Highest Alphabet:</strong> {highest_alphabet.join(', ')}</p>}
+      </div>
+    );
   };
 
   return (
-    <div>
-      <h1>ABCD123</h1> {/* Replace with your roll number */}
-      <div>
-        <h2>Enter JSON Data</h2>
-        <textarea
-          rows="5"
-          cols="40"
-          value={input}
-          onChange={handleInputChange}
-          placeholder='{"data":["A","C","z"]}'
-        />
-        <button onClick={handleSubmit}>Submit</button>
-        {!isValidJson && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="App">
+      <h1>Data Processor</h1>
+      <div className="input-form">
+        <h2>Submit Data</h2>
+        <form onSubmit={handleSubmit}>
+          <textarea
+            value={jsonInput}
+            onChange={handleChange}
+            placeholder='Enter JSON data (e.g., {"data": ["A", "C", "z"]})'
+            rows="5"
+            cols="50"
+          />
+          <br />
+          <button type="submit">Submit</button>
+        </form>
+        {error && <p className="error">{error}</p>}
       </div>
-
-      {response && (
-        <div>
-          <h2>Response</h2>
-          <div>
-            <label>
-              <input
-                type="checkbox"
-                name="characters"
-                checked={visibleSections.characters}
-                onChange={handleSectionChange}
-              />
-              Characters
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                name="numbers"
-                checked={visibleSections.numbers}
-                onChange={handleSectionChange}
-              />
-              Numbers
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                name="highestAlphabet"
-                checked={visibleSections.highestAlphabet}
-                onChange={handleSectionChange}
-              />
-              Highest Alphabet
-            </label>
-          </div>
-          {visibleSections.characters && response.alphabets.length > 0 && (
-            <div>
-              <h3>Characters</h3>
-              <pre>{JSON.stringify(response.alphabets, null, 2)}</pre>
-            </div>
-          )}
-          {visibleSections.numbers && response.numbers.length > 0 && (
-            <div>
-              <h3>Numbers</h3>
-              <pre>{JSON.stringify(response.numbers, null, 2)}</pre>
-            </div>
-          )}
-          {visibleSections.highestAlphabet && response.highest_alphabet.length > 0 && (
-            <div>
-              <h3>Highest Alphabet</h3>
-              <pre>{JSON.stringify(response.highest_alphabet, null, 2)}</pre>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="dropdown-menu">
+        <h2>Select Sections to Display</h2>
+        <label>
+          <input
+            type="checkbox"
+            name="characters"
+            checked={visibleSections.characters}
+            onChange={handleSectionChange}
+          />
+          Characters
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="numbers"
+            checked={visibleSections.numbers}
+            onChange={handleSectionChange}
+          />
+          Numbers
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="highestAlphabet"
+            checked={visibleSections.highestAlphabet}
+            onChange={handleSectionChange}
+          />
+          Highest Alphabet
+        </label>
+      </div>
+      {renderResults()}
     </div>
   );
-}
+};
 
 export default App;
-
-
